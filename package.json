@@ -4,8 +4,21 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node ./index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "bin": {
+    "po": "./bin/global.js"
+  },
+  "preferGlobal": true,
+  "type": "module",
+  "dependencies": {
+    "@vitalets/google-translate-api": "^8.0.0",
+    "chalk": "^5.0.1",
+    "inquirer": "^9.1.2",
+    "po2json": "^0.4.5",
+    "readdirp": "^3.6.0"
+  }
 }
