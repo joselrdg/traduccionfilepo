@@ -81,6 +81,74 @@ const writeFile = async (data, nameFile) => {
   } else chalk.green.bold("No se guardo...");
 };
 
+const checkAutoCorrected = (element, translation) => {
+  if (translation.from.text.autoCorrected || translation.from.text.didYouMean) {
+    correcciones.push({ element, translation });
+  }
+};
+
+const validar = (texto) => {
+  // const formato = /[`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
+  const formato = /[`!@#$%^&*()_+\-=\[\]{};':"\\|<>\/~]/;
+  if (formato.test(texto)) {
+    return false;
+  } else return true;
+};
+
+const replacingBlanks = async (texto) => {
+  texto = texto.replaceAll(" $ ", "$");
+  texto = texto.replaceAll(" = ", "=");
+  texto = texto.replaceAll(" (%s) ", "(%s)");
+  texto = texto.replaceAll(" %2$s ", "%2$s");
+  texto = texto.replaceAll("%D", "%d");
+  texto = texto.replaceAll("%1$s", " %1$s");
+  texto = texto.replaceAll("  %1$s", " %1$s");
+  texto = texto.replace(/^ %1\$s/, "%1$s");
+  texto = texto.replaceAll("%1$D", "%1$d");
+  texto = texto.replaceAll("en%con", "v%s");
+  texto = texto.replaceAll("Bookdpa", "BOOKEDPA");
+  texto = texto.replaceAll("Bookdpa", "BOOKEDPA");
+  texto = texto.replaceAll("%S", "%s");
+
+  return texto;
+};
+
+const checkText = async (frase, traduccion) => {
+  let save = false;
+  while (!save) {
+    console.log("\n     " + chalk.bold.cyanBright(frase));
+    console.log("     " + chalk.bold.yellow(traduccion) + "\n");
+    const { type } = await queryParams("list", "Guardar traducción?:", [
+      "Sí",
+      "No",
+      "Mantener original"
+    ]);
+    if (type === "No") {
+      const { type } = await queryParams(
+        "input",
+        "Introduce nueva traducción:"
+      );
+      traduccion = type;
+    } else if (type === "Sí") {
+      save = true;
+    } else {
+      traduccion = frase;
+    }
+  }
+  return traduccion;
+};
+
+const correctText = async (frase, traduccion, modo) => {
+  traduccion = await replacingBlanks(traduccion);
+  if (modo === "Manual") {
+    return await checkText(frase, traduccion);
+  } else if (modo === "Semi-Automático") {
+    if (!validar(frase)) {
+      return await checkText(frase, traduccion);
+    } else return traduccion;
+  } else return traduccion;
+};
+
 const formatTexto = async (
   path,
   typeFile,
@@ -108,15 +176,11 @@ const formatTexto = async (
           idiomaDoc,
           idiomaTraduc
         );
+        const txt = await correctText(element.msgid, translation.text, modo);
         if (element.msgstr[0] === "") {
-          element.msgstr[0] = translation.text;
-        } else element.msgstr.push(translation.text);
-        if (
-          translation.from.text.autoCorrected ||
-          translation.from.text.didYouMean
-        ) {
-          correcciones.push({ element, translation });
-        }
+          element.msgstr[0] = txt;
+        } else element.msgstr.push(txt);
+        checkAutoCorrected(element, translation);
         if (element.msgid_plural) {
           if (element.msgid_plural !== "") {
             const translation = await translatePh(
@@ -124,15 +188,15 @@ const formatTexto = async (
               idiomaDoc,
               idiomaTraduc
             );
+            const txt = await correctText(
+              element.msgid_plural,
+              translation.text,
+              modo
+            );
             if (element.msgstr[1] === "") {
-              element.msgstr[1] = translation.text;
-            } else element.msgstr.push(translation.text);
-            if (
-              translation.from.text.autoCorrected ||
-              translation.from.text.didYouMean
-            ) {
-              correcciones.push({ element, translation });
-            }
+              element.msgstr[1] = txt;
+            } else element.msgstr.push(txt);
+            checkAutoCorrected(element, translation);
           }
         }
       }
@@ -144,12 +208,6 @@ const formatTexto = async (
 
 const compila = async (path) => {
   console.log(path);
-  var input = fs.createReadStream(path);
-  var po = gettextParser.po.createParseStream();
-  input.pipe(po);
-  po.on("data", function (data) {
-    console.log(data.translations[""]); // output translations for the default context
-  });
 };
 
 const options = async function (a, b) {
@@ -186,9 +244,9 @@ const options = async function (a, b) {
       );
       idiomaDoc = idiomaDoc.type !== "" ? idiomaDoc.type : "en";
       const modo = await queryParams("list", "Selecciona Modo:", [
-        "Automatico",
         "Manual",
-        "Semi-Automático"
+        "Semi-Automático",
+        "Automatico"
       ]);
 
       const po = formatTexto(
