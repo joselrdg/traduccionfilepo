@@ -17,6 +17,7 @@
   "dependencies": {
     "@vitalets/google-translate-api": "^8.0.0",
     "chalk": "^5.0.1",
+    "gettext-parser": "^6.0.0",
     "inquirer": "^9.1.2",
     "po2json": "^0.4.5",
     "readdirp": "^3.6.0"

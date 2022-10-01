@@ -1,8 +1,8 @@
 import translate from "@vitalets/google-translate-api";
 
-export function translatePh(phrase) {
+export function translatePh(phrase, idiomaDoc, idiomaTraduc) {
   return new Promise((resolve) => {
-    translate(phrase, { from: "en", to: "es" })
+    translate(phrase, { from: idiomaDoc, to: idiomaTraduc })
       .then((res) => {
         // console.log(res);
         // console.log(res.text);
@@ -13,7 +13,7 @@ export function translatePh(phrase) {
         // //=> I [speak] Dutch!
         // console.log(res.from.text.didYouMean);
         // //=> true
-        resolve(res.text);
+        resolve(res);
       })
       .catch((err) => {
         console.error(err);
